@@ -2,5 +2,13 @@
 name = "iniatom"
 version = "0.1.0"
 edition = "2021"
+authors = ["hiroki.okubo.tokyo@gmail.com"]
+description = "ダウンロードした授業資料を見やすい形式に成形する個人的CLIツール"
 
 [dependencies]
+clap = { version = "4.5.29", features = ["derive"] }
+soup = "0.5.1"
+
+[profile.release]
+lto = "fat"
+opt-level = 3
