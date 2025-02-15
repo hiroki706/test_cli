@@ -10,79 +10,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          # (optional) Path to changelog.
+          changelog: CHANGELOG.md
+          # (required) GitHub token for creating GitHub Releases.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-assets:
+    needs: create-release
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            ext: ""
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            ext: ".exe"
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            ext: ""
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - name: レポジトリをチェックアウト
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - name: Install cross-compilation tools
+        uses: taiki-e/setup-cross-toolchain-action@v1
         with:
-          toolchain: stable
           target: ${{ matrix.target }}
-
-      - name: Build with Cargo
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Prepare Binary
-        run: |
-          mkdir -p artifacts
-          cp target/${{ matrix.target }}/release/my-cli${{ matrix.ext }} artifacts/my-cli-${{ matrix.target }}${{ matrix.ext }}
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        if: startsWith(matrix.os, 'ubuntu')
+      - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          name: my-cli-${{ matrix.target }}
-          path: artifacts/my-cli-${{ matrix.target }}${{ matrix.ext }}
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 各プラットフォームの成果物をダウンロード
-      - name: Download Linux Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: my-cli-x86_64-unknown-linux-gnu
-          path: artifacts/linux
-
-      - name: Download Windows Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: my-cli-x86_64-pc-windows-msvc
-          path: artifacts/windows
-
-      - name: Download macOS Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: my-cli-x86_64-apple-darwin
-          path: artifacts/macos
-
-      # GitHub Release の作成
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          files: |
-            artifacts/linux/my-cli-x86_64-unknown-linux-gnu
-            artifacts/windows/my-cli-x86_64-pc-windows-msvc.exe
-            artifacts/macos/my-cli-x86_64-apple-darwin
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
+          # Note that glob pattern is not supported yet.
+          bin: ...
+          # (optional) Target triple, default is host triple.
+          target: ${{ matrix.target }}
+          # (required) GitHub token for uploading assets to GitHub Releases.
+          token: ${{ secrets.GITHUB_TOKEN }}
