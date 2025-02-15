@@ -33,7 +33,6 @@ jobs:
         with:
           toolchain: stable
           target: ${{ matrix.target }}
-          override: true
 
       - name: Build with Cargo
         run: cargo build --release --target ${{ matrix.target }}
