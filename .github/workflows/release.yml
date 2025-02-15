@@ -5,6 +5,7 @@ on:
     # タグ（例: v1.0.0）をプッシュしたときに実行
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
