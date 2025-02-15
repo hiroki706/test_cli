@@ -2,6 +2,8 @@ name: Build & Release
 
 on:
   push:
+    branches:
+      - main
     # タグ（例: v1.0.0）をプッシュしたときに実行
     tags:
       - 'v*'
@@ -23,11 +25,11 @@ jobs:
             ext: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: レポジトリをチェックアウト
+        uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/toolchain@stable
         with:
           toolchain: stable
           target: ${{ matrix.target }}
@@ -36,37 +38,41 @@ jobs:
       - name: Build with Cargo
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Upload artifact
+      - name: Prepare Binary
+        run: |
+          mkdir -p artifacts
+          cp target/${{ matrix.target }}/release/my-cli${{ matrix.ext }} artifacts/my-cli-${{ matrix.target }}${{ matrix.ext }}
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          # 各プラットフォーム毎に名前を付与
-          name: my-cli-${{ matrix.os }}
-          path: target/${{ matrix.target }}/release/my-cli${{ matrix.ext }}
+          name: my-cli-${{ matrix.target }}
+          path: artifacts/my-cli-${{ matrix.target }}${{ matrix.ext }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # 各プラットフォームの成果物をそれぞれダウンロード（保存先は artifacts/ 以下）
-      - name: Download Ubuntu binary
+      # 各プラットフォームの成果物をダウンロード
+      - name: Download Linux Binary
         uses: actions/download-artifact@v4
         with:
-          name: my-cli-ubuntu-latest
+          name: my-cli-x86_64-unknown-linux-gnu
           path: artifacts/linux
 
-      - name: Download Windows binary
+      - name: Download Windows Binary
         uses: actions/download-artifact@v4
         with:
-          name: my-cli-windows-latest
+          name: my-cli-x86_64-pc-windows-msvc
           path: artifacts/windows
 
-      - name: Download macOS binary
+      - name: Download macOS Binary
         uses: actions/download-artifact@v4
         with:
-          name: my-cli-macos-latest
+          name: my-cli-x86_64-apple-darwin
           path: artifacts/macos
 
       # GitHub Release の作成
@@ -75,36 +81,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 各バイナリをリリースにアップロード
-      - name: Upload Linux binary to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          asset_path: artifacts/linux/my-cli
-          asset_name: my-cli-linux
-          asset_content_type: application/octet-stream
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Windows binary to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          asset_path: artifacts/windows/my-cli.exe
-          asset_name: my-cli-windows.exe
-          asset_content_type: application/octet-stream
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload macOS binary to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          asset_path: artifacts/macos/my-cli
-          asset_name: my-cli-macos
-          asset_content_type: application/octet-stream
+          files: |
+            artifacts/linux/my-cli-x86_64-unknown-linux-gnu
+            artifacts/windows/my-cli-x86_64-pc-windows-msvc.exe
+            artifacts/macos/my-cli-x86_64-apple-darwin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
