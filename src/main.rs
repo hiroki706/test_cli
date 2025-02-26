@@ -10,7 +10,7 @@ fn main() {
     let data = std::fs::read_to_string(data_path).expect("ファイルが読み込めませんでした");
     let soup = Soup::new(&data);
     let svgs = soup.tag("svg").find_all();
-    let output_slides = svgs.map(|node| node.display()).collect::<Vec<_>>().join("<hr />");
+    let output_slides = svgs.map(|node| node.display()).collect::<Vec<_>>().join("<hr>");
 
     let texts = soup.tag("div").class("col-3").find_all();
     let output_texts = texts
