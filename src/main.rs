@@ -10,13 +10,13 @@ fn main() {
     let data = std::fs::read_to_string(data_path).expect("ファイルが読み込めませんでした");
     let soup = Soup::new(&data);
     let svgs = soup.tag("svg").find_all();
-    let output_slides = svgs.map(|node| node.display()).collect::<Vec<_>>().join("");
+    let output_slides = svgs.map(|node| node.display()).collect::<Vec<_>>().join("<hr />");
 
     let texts = soup.tag("div").class("col-3").find_all();
     let output_texts = texts
         .map(|node| node.text())
         .collect::<Vec<_>>()
-        .join("\n- ");
+        .join("\n----------------\n");
 
     std::fs::write(output_name.with_extension("html"), output_slides)
         .expect("ファイルが書き込めませんでした");
