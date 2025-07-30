@@ -1,6 +1,6 @@
 [package]
 name = "iniatom"
-version = "0.1.0"
+version = "0.1.6"
 edition = "2021"
 authors = ["hiroki.okubo.tokyo@gmail.com"]
 description = "ダウンロードした授業資料を見やすい形式に成形する個人的CLIツール"
